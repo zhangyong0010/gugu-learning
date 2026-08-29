@@ -12,7 +12,6 @@
   <main class="app-shell">
     <header class="topbar">
       <div class="brand"><span class="owl">◉</span><span>GuGu</span></div>
-      <button class="avatar" aria-label="学习档案">林</button>
     </header>
 
     <section class="greeting">
@@ -22,10 +21,10 @@
     </section>
 
     <section class="streak-card">
-      <div><span>三国探索进度</span><strong>12 <small>/ 100</small></strong></div>
-      <div class="ring"><b>68%</b></div>
+      <div><span>三国探索进度</span><strong><span id="learned-count">0</span> <small>/ 100</small></strong></div>
+      <div class="ring"><b id="mastery-rate">0%</b></div>
       <div class="bar"><i></i></div>
-      <footer><span>连续学习 3 天</span><span>待复习 6 题</span></footer>
+      <footer><span id="streak">刚刚开始</span><span id="review-count">待复习 0 题</span></footer>
     </section>
 
     <nav class="tabs" aria-label="内容导航">
