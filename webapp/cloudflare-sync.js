@@ -1,4 +1,12 @@
 /* 可选云端同步：仅在 Telegram Mini App 中启用；普通浏览器继续使用本地进度。 */
+const telegramReady = new Promise(resolve => {
+  if (window.Telegram?.WebApp) return resolve();
+  const script = document.createElement('script');
+  script.src = 'https://telegram.org/js/telegram-web-app.js';
+  script.onload = resolve;
+  script.onerror = resolve;
+  document.head.append(script);
+});
 window.GUGU_CLOUD = (() => {
   const base = (window.GUGU_API_URL || '').replace(/\/$/, '');
   let token = sessionStorage.getItem('gugu-cloud-token') || '', timer;
@@ -8,8 +16,10 @@ window.GUGU_CLOUD = (() => {
     return response.json();
   };
   return {
-    enabled: Boolean(base && window.Telegram?.WebApp?.initData),
+    get enabled() { return Boolean(base && window.Telegram?.WebApp?.initData); },
     async load() {
+      await telegramReady;
+      window.Telegram?.WebApp?.ready?.();
       if (!base || !window.Telegram?.WebApp?.initData) return null;
       try {
         if (!token) { const session = await request('/api/session', { method: 'POST', body: JSON.stringify({ initData: window.Telegram.WebApp.initData }) }); token = session.token; sessionStorage.setItem('gugu-cloud-token', token); }
