@@ -84,6 +84,22 @@ async function telegram(env, method, payload) {
   if (!response.ok) throw new Error(`Telegram API ${response.status}`);
   return response.json();
 }
+async function ensureTelegramDelivery(env, workerOrigin) {
+  const webhookUrl = `${workerOrigin}/telegram`;
+  const commands = [
+    { command: 'start', description: '打开 GuGu 学习空间' },
+    { command: 'practice', description: '开始下一题' },
+    { command: 'review', description: '复习到期题目' },
+    { command: 'stats', description: '查看学习档案' },
+    { command: 'map', description: '查看知识地图' },
+    { command: 'help', description: '查看帮助' }
+  ];
+  await Promise.all([
+    telegram(env, 'setWebhook', { url: webhookUrl, secret_token: env.WEBHOOK_SECRET, allowed_updates: ['message'], drop_pending_updates: false }),
+    telegram(env, 'setMyCommands', { commands }),
+    telegram(env, 'setChatMenuButton', { menu_button: { type: 'web_app', text: '开始学习 🦉', web_app: { url: env.MINI_APP_URL } } })
+  ]);
+}
 const questionText = q => `📚 <b>三国 · ${escapeHtml(q.stage)}</b>　·　${escapeHtml(q.type)}\n🧭 知识节点：${escapeHtml(q.node)}\n\n${escapeHtml(q.prompt)}\n\n请直接回复你的答案。`;
 async function reply(env, chatId, text, extra = {}) { return telegram(env, 'sendMessage', { chat_id: chatId, text, parse_mode: 'HTML', ...extra }); }
 async function botUpdate(update, env) {
@@ -102,7 +118,7 @@ async function botUpdate(update, env) {
 }
 async function api(request, env, url, headers) {
   if (url.pathname === '/api/health') return json({ ok: true, service: 'gugu-api' }, 200, headers);
-  if (url.pathname === '/api/session' && request.method === 'POST') { const { initData } = await request.json(); const user = await validateInitData(initData, env); await ensureUser(env.DB, user); return json({ token: await sessionFor(user, env), user: { id: user.id, name: user.first_name || user.username || 'GuGu 学习者' } }, 200, headers); }
+  if (url.pathname === '/api/session' && request.method === 'POST') { const { initData } = await request.json(); const user = await validateInitData(initData, env); await ensureUser(env.DB, user); try { await ensureTelegramDelivery(env, url.origin); } catch (error) { console.error(`Telegram setup: ${error?.message || 'failed'}`); } return json({ token: await sessionFor(user, env), user: { id: user.id, name: user.first_name || user.username || 'GuGu 学习者' } }, 200, headers); }
   const userId = await requireSession(request, env);
   if (url.pathname === '/api/state' && request.method === 'GET') {
     const row = await env.DB.prepare('SELECT state_json, updated_at FROM mini_app_state WHERE telegram_id=?').bind(userId).first();
@@ -118,4 +134,4 @@ async function api(request, env, url, headers) {
   if (url.pathname === '/api/progress' && request.method === 'GET') { const rows = await progressRows(env.DB, userId); return json({ seen: rows.length, mastered: rows.filter(r => r.mastery >= .75).length, due: rows.filter(r => r.due_at && r.due_at <= now()).length }, 200, headers); }
   return json({ error: 'not_found' }, 404, headers);
 }
-export default { async fetch(request, env) { const url = new URL(request.url), headers = cors(request, env); if (request.method === 'OPTIONS') return new Response(null, { headers }); try { if (request.method === 'POST' && url.pathname === `/telegram/${env.WEBHOOK_SECRET}`) { if (request.headers.get('X-Telegram-Bot-Api-Secret-Token') !== env.WEBHOOK_SECRET) return new Response('forbidden', { status: 403 }); await botUpdate(await request.json(), env); return new Response('ok'); } if (url.pathname.startsWith('/api/')) return await api(request, env, url, headers); return json({ error: 'not_found' }, 404, headers); } catch (error) { console.error(error?.message || 'request failed'); return json({ error: 'request_failed' }, 400, headers); } } };
+export default { async fetch(request, env) { const url = new URL(request.url), headers = cors(request, env); if (request.method === 'OPTIONS') return new Response(null, { headers }); try { if (request.method === 'POST' && url.pathname === '/telegram') { if (request.headers.get('X-Telegram-Bot-Api-Secret-Token') !== env.WEBHOOK_SECRET) return new Response('forbidden', { status: 403 }); await botUpdate(await request.json(), env); return new Response('ok'); } if (url.pathname.startsWith('/api/')) return await api(request, env, url, headers); return json({ error: 'not_found' }, 404, headers); } catch (error) { console.error(error?.message || 'request failed'); return json({ error: 'request_failed' }, 400, headers); } } };
