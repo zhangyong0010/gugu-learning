@@ -3,7 +3,7 @@
   "main": "src/index.js",
   "compatibility_date": "2026-08-30",
   "workers_dev": true,
-  "d1_databases": [{ "binding": "DB", "database_name": "gugu-learning", "database_id": "REPLACE_AFTER_D1_CREATE" }],
+  "d1_databases": [{ "binding": "DB", "database_name": "gugu-learning", "database_id": "c22d3386-6a3f-4dd3-ab23-a59dc8dc89aa" }],
   "vars": {
     "MINI_APP_URL": "REPLACE_AFTER_PAGES_DEPLOY",
     "ALLOWED_ORIGIN": "REPLACE_AFTER_PAGES_DEPLOY"
