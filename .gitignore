@@ -1,3 +1,5 @@
 .env
+cloudflare-worker/.dev.vars*
+cloudflare-worker/.wrangler/
 *.sqlite3
 __pycache__/
