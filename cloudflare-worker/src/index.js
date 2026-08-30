@@ -117,7 +117,7 @@ async function botUpdate(update, env) {
   return reply(env, message.chat.id, `<b>判定：${result.verdict}</b>（掌握度 ${Math.round(saved.mastery * 100)}%）\n\n<b>参考答案</b>\n${escapeHtml(question.answer)}\n\n<b>得分点</b>\n命中：${escapeHtml(result.hits.join('、') || '暂无')}\n待补：${escapeHtml(missing.join('、') || '无')}\n\n这题将在约 ${saved.hours / 24} 天后再次出现。`);
 }
 async function api(request, env, url, headers) {
-  if (url.pathname === '/api/health') return json({ ok: true, service: 'gugu-api' }, 200, headers);
+  if (url.pathname === '/api/health') return json({ ok: true, service: 'gugu-api', runtime: { webhookSecret: Boolean(env.WEBHOOK_SECRET), botToken: Boolean(env.TELEGRAM_BOT_TOKEN), sessionSecret: Boolean(env.SESSION_SECRET) } }, 200, headers);
   if (url.pathname === '/api/session' && request.method === 'POST') { const { initData } = await request.json(); const user = await validateInitData(initData, env); await ensureUser(env.DB, user); try { await ensureTelegramDelivery(env, url.origin); } catch (error) { console.error(`Telegram setup: ${error?.message || 'failed'}`); } return json({ token: await sessionFor(user, env), user: { id: user.id, name: user.first_name || user.username || 'GuGu 学习者' } }, 200, headers); }
   const userId = await requireSession(request, env);
   if (url.pathname === '/api/state' && request.method === 'GET') {
