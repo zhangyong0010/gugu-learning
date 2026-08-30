@@ -1,5 +1,5 @@
 {
-  "name": "gugu-api",
+  "name": "gugu-learning",
   "main": "src/index.js",
   "compatibility_date": "2026-08-30",
   "workers_dev": true,
